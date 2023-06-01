@@ -57,10 +57,12 @@ function buyTicket() {
   const targetFilm = filmsList.find(film => film.id === currentFilmDisplay);
   if ((targetFilm.capacity - targetFilm.tickets_sold) > 0) {
     targetFilm.tickets_sold+=1;
-    alert("ticket bought!");
-    updateTicketAmount();
+    if(targetFilm.capacity === targetFilm.tickets_sold) {
+      document.getElementById("buy-ticket").innerText = "Sold Out";
+      filmContainer.children[currentFilmDisplay - 1].classList.add("sold-out");
+    }
   }
-  else {alert("no tickets left :(")}
+  updateTicketAmount();
 }
 
 function updateTicketAmount() {

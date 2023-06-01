@@ -1,5 +1,9 @@
 // Your code here
 const apiURL = "http://localhost:3000/films";
+const headers = {
+  Accept: 'application/json',
+  'Content-type': 'application/json',
+}
 
 const filmContainer = document.getElementById("films");
 const detailTitle = document.getElementById("title");
@@ -26,6 +30,7 @@ function addToList(film) {
 }
 
 function displayFilms() {
+  filmContainer.innerHTML = '';
   filmsList.forEach(displayFilmInList);
 }
 
@@ -34,8 +39,17 @@ function displayFilmInList(film) {
   filmLI.innerText = film.title;
   filmLI.classList.add("film");
   filmLI.classList.add("item");//interesting design choice in the css here
+  if (film.capacity === film.tickets_sold){
+    filmLI.classList.add("sold-out");
+  }
+
   filmLI.addEventListener("click", () => {displayFilmDetails(film.id)});
   filmContainer.append(filmLI);
+
+  const deleteButton = document.createElement("button");
+  deleteButton.innerText = "Delete";
+  deleteButton.addEventListener("click", () => {deleteFilm(film.id)});
+  filmLI.append(deleteButton);
 }
 
 function displayFilmDetails(id) {
@@ -48,6 +62,8 @@ function displayFilmDetails(id) {
   detailShowtime.innerText = targetFilm.showtime;
   detailTicketsRemaining.innerText = (targetFilm.capacity - targetFilm.tickets_sold);
   detailPoster.src = targetFilm.poster;
+
+  checkTicketAmountForButton(targetFilm);
 }
 
 document.getElementById("buy-ticket").addEventListener("click", buyTicket);
@@ -57,10 +73,19 @@ function buyTicket() {
   const targetFilm = filmsList.find(film => film.id === currentFilmDisplay);
   if ((targetFilm.capacity - targetFilm.tickets_sold) > 0) {
     targetFilm.tickets_sold+=1;
-    if(targetFilm.capacity === targetFilm.tickets_sold) {
-      document.getElementById("buy-ticket").innerText = "Sold Out";
-      filmContainer.children[currentFilmDisplay - 1].classList.add("sold-out");
-    }
+
+    console.log(`${apiURL}/${currentFilmDisplay}`);
+    fetch(`${apiURL}/${currentFilmDisplay}`, {
+      headers,
+      method: "PATCH",
+      body: JSON.stringify({
+        "tickets_sold": targetFilm.tickets_sold
+      })
+    })
+      .then(res => res.json())
+      .then(json => {console.log(json);});
+    
+    checkTicketAmountForButton(targetFilm);
   }
   updateTicketAmount();
 }
@@ -68,4 +93,25 @@ function buyTicket() {
 function updateTicketAmount() {
   const targetFilm = filmsList.find(film => film.id === currentFilmDisplay);
   detailTicketsRemaining.innerText = (targetFilm.capacity - targetFilm.tickets_sold);
+}
+
+function checkTicketAmountForButton(targetFilm) {
+  //extra extra credit logic
+  if(targetFilm.capacity === targetFilm.tickets_sold) {
+    document.getElementById("buy-ticket").innerText = "Sold Out";
+    filmContainer.children[currentFilmDisplay - 1].classList.add("sold-out");
+  }
+  else{document.getElementById("buy-ticket").innerText = "Buy Ticket";}
+}
+
+function deleteFilm(id) {
+  const compareString = `${id}`;
+  newList = filmsList.filter(film => film.id !== compareString);
+  console.log(newList);
+  fetch(`${apiURL}/${compareString}`, {
+    headers,
+    method: "DELETE"
+  })
+  filmsList = newList;
+  displayFilms();
 }
